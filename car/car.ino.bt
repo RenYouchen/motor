@@ -1,0 +1,41 @@
+#include <motor.h>
+#include <motorPair.h>
+
+#include <BluetoothSerial.h>
+
+#include "config.h"
+
+Motor leftMotor(ENA, IN1, IN2);
+Motor rightMotor(ENB, IN3, IN4);
+MotorPair car(rightMotor, leftMotor);
+
+BluetoothSerial BT;
+data d;
+bool newData = false;
+
+void readData() {
+	if (BT.available() > sizeof(data)) {
+		d.lspeed = BT.read();
+		d.rspeed = BT.read();
+		newData = true;
+	}
+}
+
+void setup() {
+	BT.begin("ESP32");
+	Serial.begin(115200);
+	car.setSpeed(0,0);
+	d.lspeed = 0;
+	d.rspeed = 0;
+}
+void loop() {
+	if (BT.connected()) {
+		readData();
+		if (newData) {
+			Serial.printf("lspeed: %d, rspeed: %d\n", d.lspeed, d.rspeed);
+			car.arcadeDrive(d.lspeed, -d.rspeed);
+			//car.setSpeed(d.lspeed, -d.rspeed);
+			newData = false;
+		}	
+	}
+}
